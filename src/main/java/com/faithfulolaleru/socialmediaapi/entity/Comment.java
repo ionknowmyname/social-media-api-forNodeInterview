@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 
@@ -31,14 +33,19 @@ public class Comment {
     @Column(nullable = false)
     private String message;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", referencedColumnName = "id")
     private Post post;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

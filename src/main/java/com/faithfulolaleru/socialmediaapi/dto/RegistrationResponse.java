@@ -19,6 +19,7 @@ public class RegistrationResponse {
     private String email;
     private String base64ProfilePicture;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
     private List<User> followers = new ArrayList<>();
     private List<User> following = new ArrayList<>();
     private boolean isActive;

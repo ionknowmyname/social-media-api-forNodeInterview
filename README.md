@@ -30,3 +30,17 @@ frontend uses the pagination well to reduce response time
 // created FollowerUser so your list of followers and following is not referencing the same User entity; and also so
 we can control the amount of information when a user gets his lists of followers. You can decide to also save 
 FollowerUser in its own table as well. I didn't for no particular reason. 
+
+if you going to save FollowerUser to its own table, then its relationship with user would switch to Many-to-Many, since 
+a FollowerUser is a user and he can follow many people as well
+
+// changed my mind, I'm saving FollowerUser to its table and switching to Many-to-Many
+
+// you should have a seperate endpoint for adding followers. To save time, I combined all of them in the edit user 
+endpoint. Ideally edit user should just edit user details, so they should be at least 2-4 endpoint (plus another 
+endpoint to activate user). I just lumped all of them into a single edit user endpoint to save time. 
+
+// update password should be a separate endpoint too, since its implementation would follow a whole other process i.e
+sending links to email, or otp to phone number, etc
+
+// also should have used more helper methods in edit user since its doing a lot of stuff

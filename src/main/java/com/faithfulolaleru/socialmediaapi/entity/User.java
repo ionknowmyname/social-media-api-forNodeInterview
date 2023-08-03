@@ -2,10 +2,15 @@ package com.faithfulolaleru.socialmediaapi.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,17 +47,27 @@ public class User implements UserDetails {
     @Column(name = "password")
     private String password;
 
-//    @OneToMany(mappedBy = "user")
-    @OneToMany()
+    // @OneToMany(mappedBy = "user")
     @ToString.Exclude
-    private List<User> followers;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private List<FollowerUser> followers;
 
-    @OneToMany()
     @ToString.Exclude
-    private List<User> following;
+    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private List<FollowerUser> following;
 
     @Column(name = "is_active")
     private boolean isActive = false;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 
 
     @Override

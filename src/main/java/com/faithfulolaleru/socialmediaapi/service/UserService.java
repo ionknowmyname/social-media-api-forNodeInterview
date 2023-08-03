@@ -1,16 +1,24 @@
 package com.faithfulolaleru.socialmediaapi.service;
 
 
-import com.faithfulolaleru.socialmediaapi.dto.RegistrationRequest;
-import com.faithfulolaleru.socialmediaapi.dto.RegistrationResponse;
+import com.faithfulolaleru.socialmediaapi.config.jwt.JwtService;
+import com.faithfulolaleru.socialmediaapi.dto.*;
+import com.faithfulolaleru.socialmediaapi.entity.FollowerUser;
 import com.faithfulolaleru.socialmediaapi.entity.User;
 import com.faithfulolaleru.socialmediaapi.exception.ErrorResponse;
 import com.faithfulolaleru.socialmediaapi.exception.GeneralException;
 import com.faithfulolaleru.socialmediaapi.repository.UserRepository;
+import com.faithfulolaleru.socialmediaapi.utils.GeneralUtils;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -22,6 +30,7 @@ import java.util.*;
 
 @Service
 @AllArgsConstructor
+@Slf4j
 public class UserService implements UserDetailsService {
 
     private final UserRepository userRepository;
@@ -29,6 +38,12 @@ public class UserService implements UserDetailsService {
     private final PasswordEncoder passwordEncoder;
 
     private final ModelMapper modelMapper;
+
+    private final GeneralUtils generalUtils;
+
+    private final AuthenticationManager authenticationManager;
+
+    private final JwtService jwtService;
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
@@ -38,60 +53,6 @@ public class UserService implements UserDetailsService {
                         HttpStatus.BAD_REQUEST,
                         ErrorResponse.ERROR_USER,
                         "Invalid User Credentials"));
-    }
-
-    public User findUserByEmail(String email) {
-
-        return userRepository.findByEmail(email)
-            .orElseThrow(() -> new GeneralException(
-                HttpStatus.BAD_REQUEST,
-                ErrorResponse.ERROR_USER,
-                "Invalid User Credentials"
-            ));
-    }
-
-    public Map<String, Object> signUpAppUser(User entity) {
-
-        boolean userExist = userRepository.existsByEmail(entity.getEmail());
-        if(userExist) {
-            // TODO check if attributes are the same and
-            // TODO if email not confirmed send confirmation email.
-            throw new GeneralException(HttpStatus.CONFLICT, ErrorResponse.ERROR_APP_USER,
-                    "AppUser with email already exists");
-        }
-
-        entity.setPassword(passwordEncoder.encode(entity.getPassword()));
-
-        AppUserEntity savedAppUser = appUserRepository.save(entity);
-
-
-        // Create OTP for AppUser
-
-        String otp = UUID.randomUUID().toString();
-        String otp2 = Utils.generateOtp();
-
-        OtpEntity otpEntity = OtpEntity.builder()
-                .otp(otp)
-                .appUser(savedAppUser)
-                .createdAt(LocalDateTime.now())
-                .expiresAt(LocalDateTime.now().plusMinutes(15))
-                .build();
-
-        boolean isSaved = otpService.save(otpEntity);
-
-        if(!isSaved) {
-            throw new GeneralException(HttpStatus.CONFLICT, ErrorResponse.ERROR_OTP,
-                    "OTP was not saved Successfully");
-        }
-
-        //TODO : send email
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("otp", otp);
-        response.put("userId", savedAppUser.getId());
-        response.put("savedAppUser", savedAppUser);
-
-        return response;
     }
 
     public RegistrationResponse registerUser(RegistrationRequest requestDto) {
@@ -115,14 +76,153 @@ public class UserService implements UserDetailsService {
         return modelMapper.map(userRepository.save(toSave), RegistrationResponse.class);
     }
 
+    public RegistrationResponse updateUser(Long id, UpdateUserRequest requestDto) {
+
+        User currentUser = generalUtils.getCurrentUser();
+        User toUpdate = generalUtils.findUserById(id);
+
+        // make sure the person logged in is the owner of the account
+        if(!currentUser.getId().equals(toUpdate.getId())) {
+            throw new GeneralException(HttpStatus.FORBIDDEN, ErrorResponse.ERROR_USER,
+                    "Cannot update user");
+        }
+
+        if(requestDto.getFollowId() != null && requestDto.getAction() != null) {
+
+            List<FollowerUser> currentFollowers = toUpdate.getFollowing();
+            boolean alreadyFollowing;
+
+            switch(requestDto.getAction()) {
+                case "ADD":
+                    // check to make sure user to add exists, then check that its not already in the follower list
+
+                    User toAdd = generalUtils.findUserById(requestDto.getFollowId());
+
+                    alreadyFollowing = currentFollowers.stream()
+                            .map(followerUser -> followerUser.getEmail()).
+                            anyMatch(email -> email.equals(toAdd.getEmail()));
+
+                    if(alreadyFollowing) {
+                        throw new GeneralException(HttpStatus.FORBIDDEN, ErrorResponse.ERROR_USER,
+                                "You already follow user");
+                    }
+
+                    // else add user to your follower list
+                    currentFollowers.add(generalUtils.convertUserToFollowerUser(toAdd));
+                    toUpdate.setFollowing(currentFollowers);
+
+                    break;
+                case "REMOVE":
+                    // check to make sure the user to remove exists in follower list
+
+                    User toRemove = generalUtils.findUserById(requestDto.getFollowId());
+
+                    alreadyFollowing = currentFollowers.stream()
+                            .map(followerUser -> followerUser.getEmail()).
+                            anyMatch(email -> email.equals(toRemove.getEmail()));
+
+                    if(!alreadyFollowing) {
+                        throw new GeneralException(HttpStatus.FORBIDDEN, ErrorResponse.ERROR_USER,
+                                "You don't follow user");
+                    }
+
+                    // go ahead and remove user from following list
+                    currentFollowers.remove(generalUtils.findFollowerUserByEmail(toRemove.getEmail()));
+                    toUpdate.setFollowing(currentFollowers);
+
+                    break;
+                default:
+                    throw new GeneralException(HttpStatus.BAD_REQUEST, ErrorResponse.ERROR_REQUIRED,
+                            "Invalid action");
+            }
+
+        }
+
+        // if there's a value to update then update, else keep existing value
+        toUpdate.setUsername((requestDto.getUsername() != null) ? requestDto.getUsername() : toUpdate.getUsername());
+        toUpdate.setEmail((requestDto.getEmail() != null) ? requestDto.getEmail() : toUpdate.getEmail());
+        toUpdate.setBase64ProfilePicture((requestDto.getBase64ProfilePicture() != null)
+                ? requestDto.getBase64ProfilePicture() : toUpdate.getBase64ProfilePicture());
+        toUpdate.setPassword((requestDto.getPassword() != null) ? passwordEncoder.encode(requestDto.getPassword())
+                : toUpdate.getPassword());
+        toUpdate.isActive(); // didn't want to refactor to Boolean
+        toUpdate.setUpdatedAt(LocalDateTime.now());
+
+        // should be redundant but just put in case, so it doesn't override existing with new nothing
+        toUpdate.setFollowers(toUpdate.getFollowers());
+        toUpdate.setFollowing(toUpdate.getFollowing());
+        toUpdate.setCreatedAt(toUpdate.getCreatedAt());
+
+        return modelMapper.map(userRepository.save(toUpdate), RegistrationResponse.class);
+    }
+
+    public String deleteUser(Long id) {
+
+        User currentUser = generalUtils.getCurrentUser();
+        User toDelete = generalUtils.findUserById(id);
+
+        // make sure the person logged in is the owner of the account
+        if(!currentUser.getId().equals(toDelete.getId())) {
+            throw new GeneralException(HttpStatus.FORBIDDEN, ErrorResponse.ERROR_USER,
+                    "Cannot delete user");
+        }
+
+        try {
+            userRepository.delete(toDelete);
+        } catch (Exception e) {
+            throw new GeneralException(HttpStatus.BAD_REQUEST, ErrorResponse.ERROR_USER,
+                    "Unable to delete user, try again.");
+        }
+
+        return "User deleted successfully";
+    }
+
+    public LoginResponse loginUser(LoginRequest requestDto) {
+
+        Authentication authentication;
+        try{
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            requestDto.getEmail(),
+                            requestDto.getPassword()
+                    )
+            );
+        } catch (AuthenticationException ex) {
+            log.error(ex.getMessage());
+            ex.printStackTrace();
+
+            throw new GeneralException(
+                    HttpStatus.BAD_REQUEST,
+                    ErrorResponse.ERROR_USER,
+                    "Invalid User Credentials"
+            );
+        }
+
+//        User user = userService.loadUserByUsername(requestDto.getEmail());
+
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        return jwtService.generateToken(authentication);
+    }
+
     public int activateUser(String email) {
         return userRepository.enableAppUser(email);
     }
 
     public User findUserByUserId(Long userId) {
+
         return userRepository.findById(userId)
                 .orElseThrow(() -> new GeneralException(HttpStatus.NOT_FOUND,
                         ErrorResponse.ERROR_USER, "User with id not found"));
+    }
+
+    public User findUserByEmail(String email) {
+
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new GeneralException(
+                        HttpStatus.BAD_REQUEST,
+                        ErrorResponse.ERROR_USER,
+                        "Invalid User Credentials"
+                ));
     }
 
     private Collection<? extends SimpleGrantedAuthority> getAuthorities(User user) {
@@ -131,6 +231,4 @@ public class UserService implements UserDetailsService {
 
         return authorities;
     }
-
-
 }

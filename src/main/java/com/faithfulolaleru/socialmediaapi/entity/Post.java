@@ -2,6 +2,8 @@ package com.faithfulolaleru.socialmediaapi.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -29,14 +31,19 @@ public class Post {
     @Column(nullable = false)
     private String message;
 
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
     private User user;
 
-    @OneToMany(mappedBy = "post")
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
     @ToString.Exclude
     private List<Comment> commmentsList;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

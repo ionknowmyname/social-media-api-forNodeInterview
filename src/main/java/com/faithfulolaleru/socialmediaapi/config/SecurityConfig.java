@@ -22,7 +22,7 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
 @EnableWebSecurity
 @AllArgsConstructor
-//@EnableGlobalMethodSecurity(prePostEnabled = true)
+// @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
 
@@ -51,8 +51,8 @@ public class SecurityConfig {
         http.csrf()
             .disable()
             .authorizeHttpRequests()
-            .requestMatchers("/api/v1/signup/**").permitAll()   //.hasRole("ADMIN")   // .hasAuthority("ADMIN")
-            .requestMatchers("/api/v1/login/**").permitAll()  //.hasAnyRole("USER", "ADMIN")   //.hasAnyAuthority("USER", "ADMIN")("USER", "ADMIN")
+            .requestMatchers("/api/v1/user/signup/**").permitAll()   //.hasRole("ADMIN")   // .hasAuthority("ADMIN")
+            .requestMatchers("/api/v1/user/login").permitAll()  //.hasAnyRole("USER", "ADMIN")   //.hasAnyAuthority("USER", "ADMIN")("USER", "ADMIN")
             //.requestMatchers("/login/**").permitAll()  //.anonymous()
             .anyRequest().authenticated()
             .and().httpBasic()

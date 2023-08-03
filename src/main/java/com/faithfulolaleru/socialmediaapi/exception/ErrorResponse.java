@@ -11,7 +11,7 @@ import org.springframework.http.HttpStatus;
 public class ErrorResponse {
 
 
-    public static final String ERROR_PHONE_NUMBER = "PHONE_NUMBER_ERROR_ENCOUNTERED";
+    public static final String ERROR_REQUIRED = "DATA_REQUIRED_ERROR_ENCOUNTERED";
 
     public static final String ERROR_USER = "USER_ERROR_ENCOUNTERED";
 

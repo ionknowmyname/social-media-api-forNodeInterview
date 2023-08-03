@@ -4,12 +4,15 @@ import com.faithfulolaleru.socialmediaapi.dto.LoginResponse;
 import com.faithfulolaleru.socialmediaapi.entity.User;
 import com.faithfulolaleru.socialmediaapi.exception.ErrorResponse;
 import com.faithfulolaleru.socialmediaapi.exception.GeneralException;
+import com.faithfulolaleru.socialmediaapi.repository.UserRepository;
 import com.faithfulolaleru.socialmediaapi.service.UserService;
+import com.faithfulolaleru.socialmediaapi.utils.GeneralUtils;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,9 +26,11 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@AllArgsConstructor
 public record JwtService(UserService userService) {
 
     private static final String SECRET_KEY = "504E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
+
 
     public String extractUsername(String token) {
         return extractClaim(token, Claims::getSubject);
