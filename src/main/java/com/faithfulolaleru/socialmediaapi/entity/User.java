@@ -49,12 +49,12 @@ public class User implements UserDetails {
 
     // @OneToMany(mappedBy = "user")
     @ToString.Exclude
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "users", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<FollowerUser> followers;
 
     @ToString.Exclude
-    @ManyToMany(fetch = FetchType.LAZY, cascade = { CascadeType.PERSIST, CascadeType.MERGE })
+    @ManyToMany(fetch = FetchType.LAZY, mappedBy = "users", cascade = { CascadeType.PERSIST, CascadeType.MERGE })
     @OnDelete(action = OnDeleteAction.CASCADE)
     private List<FollowerUser> following;
 

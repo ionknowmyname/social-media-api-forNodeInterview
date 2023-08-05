@@ -1,7 +1,9 @@
 package com.faithfulolaleru.socialmediaapi.dto;
 
+import com.faithfulolaleru.socialmediaapi.entity.FollowerUser;
 import com.faithfulolaleru.socialmediaapi.entity.User;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
@@ -12,6 +14,7 @@ import java.util.List;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
+@Builder
 public class RegistrationResponse {
 
     private Long id;
@@ -20,7 +23,7 @@ public class RegistrationResponse {
     private String base64ProfilePicture;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private List<User> followers = new ArrayList<>();
-    private List<User> following = new ArrayList<>();
+    private List<FollowerUser> followers = new ArrayList<>();
+    private List<FollowerUser> following = new ArrayList<>();
     private boolean isActive;
 }

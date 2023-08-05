@@ -5,6 +5,7 @@ import com.faithfulolaleru.socialmediaapi.dto.*;
 import com.faithfulolaleru.socialmediaapi.exception.ErrorResponse;
 import com.faithfulolaleru.socialmediaapi.exception.GeneralException;
 import com.faithfulolaleru.socialmediaapi.response.AppResponse;
+import com.faithfulolaleru.socialmediaapi.service.LoginService;
 import com.faithfulolaleru.socialmediaapi.service.UserService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,7 +18,7 @@ public class UserController {
 
     private final UserService userService;
 
-    private final static String responseMessage = "App user token is %s";
+    private final LoginService loginService;
 
 
     @PostMapping("/signup")
@@ -64,7 +65,7 @@ public class UserController {
     @PostMapping("/login")
     public AppResponse<?> loginUser(@RequestBody LoginRequest requestDto) {
 
-        LoginResponse response = userService.loginUser(requestDto);
+        LoginResponse response = loginService.loginUser(requestDto);
 
         return AppResponse.builder()
                 .statusCode(HttpStatus.OK.value())

@@ -2,6 +2,10 @@ package com.faithfulolaleru.socialmediaapi.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 
@@ -31,11 +35,16 @@ public class Post {
     @Column(nullable = false)
     private String message;
 
+//    @Column(name = "likes_count")
+//    private int likesCount = 0;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", referencedColumnName = "id")
+    @JdbcTypeCode(SqlTypes.JSON)
     private User user;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "post")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @ToString.Exclude
     private List<Comment> commmentsList;
 

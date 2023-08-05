@@ -41,10 +41,6 @@ public class UserService implements UserDetailsService {
 
     private final GeneralUtils generalUtils;
 
-    private final AuthenticationManager authenticationManager;
-
-    private final JwtService jwtService;
-
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
 
@@ -71,6 +67,7 @@ public class UserService implements UserDetailsService {
                 .password(passwordEncoder.encode(requestDto.getPassword()))
                 .followers(new ArrayList<>())
                 .following(new ArrayList<>())
+                .createdAt(LocalDateTime.now())
                 .build();
 
         return modelMapper.map(userRepository.save(toSave), RegistrationResponse.class);
@@ -177,58 +174,7 @@ public class UserService implements UserDetailsService {
         return "User deleted successfully";
     }
 
-    public LoginResponse loginUser(LoginRequest requestDto) {
-
-        Authentication authentication;
-        try{
-            authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            requestDto.getEmail(),
-                            requestDto.getPassword()
-                    )
-            );
-        } catch (AuthenticationException ex) {
-            log.error(ex.getMessage());
-            ex.printStackTrace();
-
-            throw new GeneralException(
-                    HttpStatus.BAD_REQUEST,
-                    ErrorResponse.ERROR_USER,
-                    "Invalid User Credentials"
-            );
-        }
-
-//        User user = userService.loadUserByUsername(requestDto.getEmail());
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        return jwtService.generateToken(authentication);
-    }
-
     public int activateUser(String email) {
         return userRepository.enableAppUser(email);
-    }
-
-    public User findUserByUserId(Long userId) {
-
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new GeneralException(HttpStatus.NOT_FOUND,
-                        ErrorResponse.ERROR_USER, "User with id not found"));
-    }
-
-    public User findUserByEmail(String email) {
-
-        return userRepository.findByEmail(email)
-                .orElseThrow(() -> new GeneralException(
-                        HttpStatus.BAD_REQUEST,
-                        ErrorResponse.ERROR_USER,
-                        "Invalid User Credentials"
-                ));
-    }
-
-    private Collection<? extends SimpleGrantedAuthority> getAuthorities(User user) {
-        Set<SimpleGrantedAuthority> authorities = new HashSet<>();
-        authorities.add(new SimpleGrantedAuthority("USER"));
-
-        return authorities;
     }
 }

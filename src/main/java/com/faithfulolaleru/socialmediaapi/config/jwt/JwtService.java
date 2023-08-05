@@ -26,8 +26,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
-@AllArgsConstructor
-public record JwtService(UserService userService) {
+public record JwtService(GeneralUtils generalUtils) {
 
     private static final String SECRET_KEY = "504E635266556A586E3272357538782F413F4428472B4B6250645367566B5970";
 
@@ -72,7 +71,7 @@ public record JwtService(UserService userService) {
     }
 
     public LoginResponse generateToken(Authentication authentication) {
-        User user = userService.findUserByEmail(authentication.getName());
+        User user = generalUtils.findUserByEmail(authentication.getName());
 
         if(!user.isActive()) {
             throw new GeneralException(HttpStatus.FORBIDDEN, ErrorResponse.ERROR_USER, "User not active");

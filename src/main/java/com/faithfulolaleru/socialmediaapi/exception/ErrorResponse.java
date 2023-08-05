@@ -15,9 +15,9 @@ public class ErrorResponse {
 
     public static final String ERROR_USER = "USER_ERROR_ENCOUNTERED";
 
-    public static final String ERROR_OTP = "OTP_ERROR_ENCOUNTERED";
+    public static final String ERROR_POST = "POST_ERROR_ENCOUNTERED";
 
-    public static final String ERROR_EMAIL = "EMAIL_ERROR_ENCOUNTERED";
+    public static final String ERROR_COMMENT = "COMMENT_ERROR_ENCOUNTERED";
 
 
 
